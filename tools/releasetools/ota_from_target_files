@@ -62,6 +62,9 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
       first, so that any changes made to the system partition are done
       using the new recovery (new kernel, etc.).
 
+  --override_device <device>
+      Override device-specific asserts. Can be a comma-separated list.
+
 """
 
 import sys
@@ -101,6 +104,7 @@ OPTIONS.worker_threads = 3
 OPTIONS.device_type = 'MTD'
 OPTIONS.fota = 0
 OPTIONS.two_step = False
+OPTIONS.override_device = 'auto'
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -354,7 +358,10 @@ def SignOutput(temp_zip_name, output_zip_name):
 
 
 def AppendAssertions(script, info_dict):
-  device = GetBuildProp("ro.product.device", info_dict)
+  if OPTIONS.override_device == "auto":
+    device = GetBuildProp("ro.product.device", info_dict)
+  else:
+    device = OPTIONS.override_device
   script.AssertDevice(device)
 
 
@@ -984,6 +991,8 @@ def main(argv):
       OPTIONS.fota = a
     elif o in ("-2", "--two_step"):
       OPTIONS.two_step = True
+    elif o in ("--override_device"):
+      OPTIONS.override_device = a
     else:
       return False
     return True
@@ -1001,7 +1010,7 @@ def main(argv):
                                               "device_type=",
                                               "fota=",
                                               "two_step",
-                                              ],
+                                              "override_device="],
                              extra_option_handler=option_handler)
 
   if len(args) != 2:
